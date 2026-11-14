@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0a0e0c">
+<meta name="description" content="Список покупок: название, количество, цена и итоговая сумма. Работает без интернета.">
+<meta name="format-detection" content="telephone=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Покупки</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="title-row">
+    <h1 id="title">Покупки</h1>
+    <button class="icon-btn" id="menuBtn" type="button" aria-label="Меню и настройки">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="currentColor">
+        <circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="sumline" id="sumline">
+    <div class="sum-left">
+      <div class="sum-label">Итого</div>
+      <div class="sum-sub" id="summary">Пока ничего нет</div>
+    </div>
+    <div class="sum-value" id="totalValue">0,00 ₽</div>
+  </div>
+  <div class="progress" id="progress"><i id="progressBar"></i></div>
+</header>
+
+<main id="main">
+  <section class="view" id="view-list">
+    <div class="items" id="items"></div>
+    <div class="empty" id="emptyList" hidden>
+      <div class="empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 8h12l-1.2 11.2a2 2 0 0 1-2 1.8H9.2a2 2 0 0 1-2-1.8L6 8Z"/>
+          <path d="M9 8V6.5a3 3 0 0 1 6 0V8"/>
+        </svg>
+      </div>
+      <p class="empty-title">Список пуст</p>
+      <p class="empty-text">Введите название товара, количество и цену — итоговая сумма посчитается сама.</p>
+    </div>
+  </section>
+
+  <section class="view" id="view-catalog" hidden>
+    <div class="searchbar">
+      <input id="catalogSearch" type="search" placeholder="Поиск по сохранённым товарам" enterkeyhint="search">
+    </div>
+    <p class="view-hint" id="catalogHint" hidden>Нажмите на товар, чтобы добавить его в список.</p>
+    <div class="items" id="catalogList"></div>
+    <div class="empty" id="emptyCatalog" hidden>
+      <div class="empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 11.5V5a1 1 0 0 1 1-1h6.5a1 1 0 0 1 .7.3l7 7a1 1 0 0 1 0 1.4l-6.5 6.5a1 1 0 0 1-1.4 0l-7-7a1 1 0 0 1-.3-.7Z"/>
+          <circle cx="8.2" cy="8.2" r="1.3"/>
+        </svg>
+      </div>
+      <p class="empty-title">Справочник пуст</p>
+      <p class="empty-text">Товары, которые вы добавляете в список, автоматически сохраняются здесь вместе с ценой.</p>
+    </div>
+  </section>
+
+  <section class="view" id="view-history" hidden>
+    <div class="statcard" id="historyStat" hidden>
+      <div class="stat-label">Всего потрачено</div>
+      <div class="stat-value" id="historyTotal">0,00 ₽</div>
+      <div class="stat-note" id="historyNote"></div>
+    </div>
+    <div id="historyList"></div>
+    <div class="empty" id="emptyHistory" hidden>
+      <div class="empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3.6 12a8.4 8.4 0 1 0 8.4-8.4 8.4 8.4 0 0 0-6.7 3.3"/>
+          <path d="M3 4.4v4.2h4.2"/>
+          <path d="M12 8v4.6l3 1.9"/>
+        </svg>
+      </div>
+      <p class="empty-title">История пуста</p>
+      <p class="empty-text">Завершённые покупки будут сохраняться здесь — можно будет повторить список или посмотреть траты.</p>
+    </div>
+  </section>
+</main>
+
+<div class="controls" id="controls">
+  <div class="toast" id="toast" hidden>
+    <span id="toastText"></span>
+    <button type="button" id="toastAction" hidden></button>
+  </div>
+
+  <form class="composer" id="composer" autocomplete="off">
+    <div class="suggest" id="suggest" hidden></div>
+    <input id="nameInput" class="name-input" type="text" placeholder="Название товара" maxlength="120" enterkeyhint="next" aria-label="Название товара">
+    <div class="composer-row">
+      <div class="field qty">
+        <button type="button" class="step" data-step="-1" aria-label="Уменьшить количество">−</button>
+        <input id="qtyInput" type="text" inputmode="decimal" value="1" aria-label="Количество">
+        <button type="button" class="step" data-step="1" aria-label="Увеличить количество">+</button>
+      </div>
+      <div class="field price">
+        <input id="priceInput" type="text" inputmode="decimal" placeholder="0,00" aria-label="Цена за единицу">
+        <span class="cur" id="curLabel">₽</span>
+      </div>
+      <button class="add-btn" type="submit" aria-label="Добавить товар">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </form>
+
+  <nav class="tabbar" id="tabbar">
+    <button class="tab active" type="button" data-tab="list">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+        <path d="M9 6h11M9 12h11M9 18h11"/>
+        <circle cx="4.6" cy="6" r="1.4" fill="currentColor" stroke="none"/>
+        <circle cx="4.6" cy="12" r="1.4" fill="currentColor" stroke="none"/>
+        <circle cx="4.6" cy="18" r="1.4" fill="currentColor" stroke="none"/>
+      </svg>
+      <span>Список</span>
+    </button>
+    <button class="tab" type="button" data-tab="catalog">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 11.5V5a1 1 0 0 1 1-1h6.5a1 1 0 0 1 .7.3l7 7a1 1 0 0 1 0 1.4l-6.5 6.5a1 1 0 0 1-1.4 0l-7-7a1 1 0 0 1-.3-.7Z"/>
+        <circle cx="8.2" cy="8.2" r="1.2"/>
+      </svg>
+      <span>Товары</span>
+    </button>
+    <button class="tab" type="button" data-tab="history">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3.6 12a8.4 8.4 0 1 0 8.4-8.4 8.4 8.4 0 0 0-6.7 3.3"/>
+        <path d="M3 4.4v4.2h4.2"/>
+        <path d="M12 8v4.6l3 1.9"/>
+      </svg>
+      <span>История</span>
+    </button>
+  </nav>
+</div>
+
+<dialog class="sheet" id="editDialog">
+  <div class="sheet-head">
+    <h2>Изменить товар</h2>
+    <button class="icon-btn" type="button" data-close="editDialog" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body">
+    <label class="lbl">Название
+      <input id="editName" type="text" maxlength="120" enterkeyhint="done">
+    </label>
+    <div class="field-grid">
+      <label class="lbl">Количество
+        <input id="editQty" type="text" inputmode="decimal">
+      </label>
+      <label class="lbl">Цена
+        <input id="editPrice" type="text" inputmode="decimal">
+      </label>
+    </div>
+    <p class="hint" id="editHint">Сумма: 0,00 ₽</p>
+    <div class="sheet-actions">
+      <button class="btn danger" type="button" id="editDelete">Удалить</button>
+      <button class="btn primary" type="button" id="editSave">Сохранить</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog class="sheet" id="menuDialog">
+  <div class="sheet-head">
+    <h2>Меню</h2>
+    <button class="icon-btn" type="button" data-close="menuDialog" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body">
+    <div class="group">
+      <div class="group-title">Валюта</div>
+      <div class="chips" id="currencyChips"></div>
+    </div>
+    <div class="group">
+      <button class="row-btn" type="button" id="finishBtn">
+        <span>Завершить покупку</span>
+        <span class="row-note">в историю</span>
+      </button>
+      <button class="row-btn" type="button" id="clearListBtn">
+        <span>Очистить список</span>
+        <span class="row-note">без сохранения</span>
+      </button>
+    </div>
+    <div class="group">
+      <button class="row-btn" type="button" id="exportBtn">Сохранить копию данных (JSON)</button>
+      <button class="row-btn" type="button" id="importBtn">Загрузить копию данных</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <p class="footnote">Данные хранятся только на этом телефоне. Чтобы приложение открывалось с главного экрана, установите его из меню браузера: «Добавить на главный экран».</p>
+  </div>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
