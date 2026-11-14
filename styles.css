@@ -22,11 +22,16 @@
 
 [hidden] { display: none !important; }
 
-html { background: #050806; }
+html {
+  background: #050806;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 
 body {
   margin: 0 auto;
   max-width: 620px;
+  height: 100vh;
   height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -623,6 +628,7 @@ dialog.sheet {
   margin: 0 auto;
   width: 100%;
   max-width: 620px;
+  max-height: 90vh;
   max-height: 90dvh;
   overflow-y: auto;
   padding: 0 0 calc(10px + var(--safe-b));
