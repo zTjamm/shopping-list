@@ -1,8 +1,7 @@
-Add-Type -AssemblyName System.Drawing
+﻿Add-Type -AssemblyName System.Drawing
 $ErrorActionPreference = 'Stop'
 
-$outDir = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) 'icons'
-New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+$root = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 function New-RoundPath {
     param([single]$x, [single]$y, [single]$w, [single]$h, [single]$r)
@@ -19,7 +18,12 @@ function New-RoundPath {
 }
 
 function New-Icon {
-    param([int]$Size, [string]$FileName, [double]$Scale = 1.0)
+    param(
+        [int]$Size,
+        [string]$FileName,
+        [double]$Scale = 1.0,
+        [switch]$Transparent
+    )
 
     $S = [single]$Size
     $bmp = New-Object System.Drawing.Bitmap($Size, $Size)
@@ -28,14 +32,18 @@ function New-Icon {
     $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
     $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
 
-    $rect = New-Object System.Drawing.Rectangle(0, 0, $Size, $Size)
-    $bg = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
-        $rect,
-        [System.Drawing.Color]::FromArgb(255, 62, 226, 127),
-        [System.Drawing.Color]::FromArgb(255, 9, 143, 86),
-        45
-    )
-    $g.FillRectangle($bg, $rect)
+    if (-not $Transparent) {
+        $rect = New-Object System.Drawing.Rectangle(0, 0, $Size, $Size)
+        $bg = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
+            $rect,
+            [System.Drawing.Color]::FromArgb(255, 62, 226, 127),
+            [System.Drawing.Color]::FromArgb(255, 9, 143, 86),
+            45
+        )
+        $g.FillRectangle($bg, $rect)
+    } else {
+        $g.Clear([System.Drawing.Color]::Transparent)
+    }
 
     $g.TranslateTransform($S / 2, $S / 2)
     $g.ScaleTransform([single]$Scale, [single]$Scale)
@@ -64,21 +72,43 @@ function New-Icon {
     )
     $g.DrawLines($checkPen, [System.Drawing.PointF[]]$points)
 
-    $target = Join-Path $outDir $FileName
-    $bmp.Save($target, [System.Drawing.Imaging.ImageFormat]::Png)
+    $bmp.Save($FileName, [System.Drawing.Imaging.ImageFormat]::Png)
 
     $checkPen.Dispose()
     $white.Dispose()
     $bag.Dispose()
     $handlePen.Dispose()
-    $bg.Dispose()
     $g.Dispose()
     $bmp.Dispose()
-
-    Write-Output ("{0} ({1}x{1})" -f $FileName, $Size)
 }
 
-New-Icon -Size 192 -FileName 'icon-192.png'
-New-Icon -Size 512 -FileName 'icon-512.png'
-New-Icon -Size 180 -FileName 'icon-180.png'
-New-Icon -Size 512 -FileName 'icon-maskable-512.png' -Scale 0.78
+# ---------- иконки для сайта (PWA) ----------
+$webDir = Join-Path $root 'icons'
+New-Item -ItemType Directory -Force -Path $webDir | Out-Null
+
+New-Icon -Size 192 -FileName (Join-Path $webDir 'icon-192.png')
+New-Icon -Size 512 -FileName (Join-Path $webDir 'icon-512.png')
+New-Icon -Size 180 -FileName (Join-Path $webDir 'icon-180.png')
+New-Icon -Size 512 -FileName (Join-Path $webDir 'icon-maskable-512.png') -Scale 0.78
+Write-Output 'иконки сайта: icons/'
+
+# ---------- иконки Android-приложения ----------
+$androidRes = Join-Path $root 'android\res'
+if (Test-Path $androidRes) {
+    $densities = @(
+        @{ Name = 'mdpi'; Launcher = 48; Foreground = 108 },
+        @{ Name = 'hdpi'; Launcher = 72; Foreground = 162 },
+        @{ Name = 'xhdpi'; Launcher = 96; Foreground = 216 },
+        @{ Name = 'xxhdpi'; Launcher = 144; Foreground = 324 },
+        @{ Name = 'xxxhdpi'; Launcher = 192; Foreground = 432 }
+    )
+
+    foreach ($d in $densities) {
+        $dir = Join-Path $androidRes ("mipmap-" + $d.Name)
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        New-Icon -Size $d.Launcher -FileName (Join-Path $dir 'ic_launcher.png')
+        New-Icon -Size $d.Launcher -FileName (Join-Path $dir 'ic_launcher_round.png')
+        New-Icon -Size $d.Foreground -FileName (Join-Path $dir 'ic_launcher_foreground.png') -Transparent -Scale 0.85
+    }
+    Write-Output 'иконки Android: android/res/mipmap-*'
+}

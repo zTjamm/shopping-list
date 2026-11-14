@@ -8,6 +8,15 @@ const CURRENCIES = ['₽', '₴', '₸', '€', '$', '£'];
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
+/** true, когда страница открыта внутри Android-приложения */
+function isNativeApp() {
+  try {
+    return !!(window.AndroidApp && window.AndroidApp.isNative && window.AndroidApp.isNative());
+  } catch (err) {
+    return false;
+  }
+}
+
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 const normKey = (s) => String(s).trim().toLowerCase().replace(/\s+/g, ' ');
@@ -682,17 +691,30 @@ function setTab(next) {
 }
 
 function exportData() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
   const now = new Date();
   const stamp = [
     now.getFullYear(),
     String(now.getMonth() + 1).padStart(2, '0'),
     String(now.getDate()).padStart(2, '0'),
   ].join('-');
+  const fileName = `покупки-${stamp}.json`;
+  const text = JSON.stringify(state, null, 2);
+
+  // В Android-приложении файл пишется напрямую в папку «Загрузки».
+  if (isNativeApp()) {
+    try {
+      window.AndroidApp.saveTextFile(fileName, text);
+      return;
+    } catch (err) {
+      console.warn('Нативное сохранение недоступно, используется скачивание', err);
+    }
+  }
+
+  const blob = new Blob([text], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
   a.href = url;
-  a.download = `покупки-${stamp}.json`;
+  a.download = fileName;
   document.body.append(a);
   a.click();
   a.remove();
@@ -938,7 +960,7 @@ function init() {
   renderAll();
   setTab('list');
 
-  if ('serviceWorker' in navigator) {
+  if ('serviceWorker' in navigator && !isNativeApp()) {
     navigator.serviceWorker
       .register('./sw.js')
       .then((registration) => {

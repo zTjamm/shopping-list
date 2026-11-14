@@ -1,0 +1,9 @@
+# сборка APK
+android/build/
+android/dist/
+android/assets/
+pokupki-stage/
+
+# служебные файлы Windows
+Thumbs.db
+desktop.ini
