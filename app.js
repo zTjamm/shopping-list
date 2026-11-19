@@ -72,6 +72,8 @@ function defaultState() {
 let state = defaultState();
 let tab = 'list';
 let editId = null;
+/** id товара, выбранного первым нажатием (второе нажатие открывает редактор) */
+let selectedId = null;
 let toastTimer = null;
 let toastActionFn = null;
 const justAdded = new Set();
@@ -265,7 +267,7 @@ function renderList() {
 
   for (const it of sorted) {
     const row = document.createElement('div');
-    row.className = 'item' + (it.done ? ' done' : '');
+    row.className = 'item' + (it.done ? ' done' : '') + (it.id === selectedId ? ' selected' : '');
     row.dataset.id = it.id;
 
     const check = document.createElement('button');
@@ -491,6 +493,20 @@ function scrollToItem(id) {
   if (row) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
+function clearSelection() {
+  if (selectedId === null) return;
+  selectedId = null;
+  const row = el.itemsList.querySelector('.item.selected');
+  if (row) row.classList.remove('selected');
+}
+
+function selectItem(id, row) {
+  const current = el.itemsList.querySelector('.item.selected');
+  if (current && current !== row) current.classList.remove('selected');
+  selectedId = id;
+  if (row) row.classList.add('selected');
+}
+
 function addItem(name, qty, price) {
   const item = {
     id: uid(),
@@ -569,6 +585,7 @@ function deleteCatalogEntry(key) {
 }
 
 function openEditor(id) {
+  clearSelection();
   const item = state.items.find((it) => it.id === id);
   if (!item) return;
   editId = id;
@@ -687,6 +704,7 @@ function setTab(next) {
   el.title.textContent = next === 'list' ? 'Покупки' : next === 'catalog' ? 'Товары' : 'История';
   el.main.scrollTop = 0;
   hideSuggest();
+  clearSelection();
   renderHeader();
 }
 
@@ -786,8 +804,26 @@ function bindEvents() {
     const row = event.target.closest('.item');
     if (!row) return;
     const id = row.dataset.id;
-    if (event.target.closest('.check')) toggleItem(id);
-    else openEditor(id);
+
+    // квадратик слева отмечает купленное, не открывая редактор
+    if (event.target.closest('.check')) {
+      if (selectedId === id) clearSelection();
+      toggleItem(id);
+      return;
+    }
+
+    // первое нажатие — выделить, второе по тому же товару — открыть редактор
+    if (selectedId !== id) {
+      selectItem(id, row);
+      showToast('Нажмите ещё раз, чтобы изменить товар');
+      return;
+    }
+    openEditor(id);
+  });
+
+  // нажатие мимо товаров снимает выделение
+  el.main.addEventListener('click', (event) => {
+    if (!event.target.closest('.item')) clearSelection();
   });
 
   // справочник

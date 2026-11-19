@@ -3,8 +3,8 @@
 param(
     [string]$SdkRoot = $env:ANDROID_SDK_ROOT,
     [string]$JavaHome = $env:JAVA_HOME,
-    [string]$VersionName = '1.0',
-    [int]$VersionCode = 1
+    [string]$VersionName = '1.1',
+    [int]$VersionCode = 2
 )
 
 $ErrorActionPreference = 'Stop'
